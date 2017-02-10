@@ -33,7 +33,8 @@ import java.util.PriorityQueue;
  * {@link com.github.johnpersano.supertoasts.library.SuperActivityToast}.
  * This class cannot (and should not) be used directly.
  */
-class Toaster extends Handler {
+class Toaster extends Handler
+{
 
     private static final String ERROR_SAT_VIEWGROUP_NULL = "The SuperActivityToast's ViewGroup " +
             "was null, could not show.";
@@ -41,7 +42,8 @@ class Toaster extends Handler {
             "was null when trying to remove the SuperToast.";
 
     // Potential messages for the handler to send
-    private static final class Messages {
+    private static final class Messages
+    {
         // Hexadecimal numbers that represent acronyms for the operation
         private static final int DISPLAY_SUPERTOAST = 0x445354;
         private static final int SHOW_NEXT = 0x415354;
@@ -51,17 +53,19 @@ class Toaster extends Handler {
     /**
      * Comparator used for ordering {@link SuperToast}s in their queue.
      */
-    private class SuperToastComparator implements Comparator<SuperToast> {
+    private class SuperToastComparator implements Comparator<SuperToast>
+    {
 
         @Override
-        public int compare(SuperToast x, SuperToast y) {
+        public int compare(SuperToast x, SuperToast y)
+        {
             // Do not shuffle around any showing SuperToasts
             if (x.isShowing()) return -1;
 
             if (x.getStyle().priorityLevel < y.getStyle().priorityLevel) return -1;
             else if (x.getStyle().priorityLevel > y.getStyle().priorityLevel) return 1;
 
-            // PriorityQueue uses a heap, we want to maintain insertion order
+                // PriorityQueue uses a heap, we want to maintain insertion order
             else return x.getStyle().timestamp <= y.getStyle().timestamp ? -1 : 1;
         }
     }
@@ -72,9 +76,11 @@ class Toaster extends Handler {
      *
      * @return The current Toaster instance
      */
-    static synchronized Toaster getInstance() {
+    static synchronized Toaster getInstance()
+    {
         if (mToaster != null) return mToaster;
-        else {
+        else
+        {
             mToaster = new Toaster();
             return mToaster;
         }
@@ -84,7 +90,8 @@ class Toaster extends Handler {
     private final PriorityQueue<SuperToast> superToastPriorityQueue;
 
     // Create a new PriorityQueue when the Toaster class is first initialized
-    private Toaster() {
+    private Toaster()
+    {
         superToastPriorityQueue = new PriorityQueue<>(10, new SuperToastComparator());
     }
 
@@ -93,7 +100,8 @@ class Toaster extends Handler {
      *
      * @param superToast The SuperToast or SuperActivityToast to be shown
      */
-    void add(SuperToast superToast) {
+    void add(SuperToast superToast)
+    {
         // Add SuperToast to queue and try to show it
         superToastPriorityQueue.add(superToast);
         this.showNextSuperToast();
@@ -103,13 +111,15 @@ class Toaster extends Handler {
      * Show the next SuperToast in the current queue. If a SuperToast is currently showing,
      * do nothing. The currently showing SuperToast will call this method when it dismisses.
      */
-    private void showNextSuperToast() {
+    private void showNextSuperToast()
+    {
         // Do nothing if the queue is empty
         if (superToastPriorityQueue.isEmpty()) return;
 
         // Get next SuperToast in the queue
         final SuperToast superToast = superToastPriorityQueue.peek();
-        if (!superToast.isShowing()) {
+        if (!superToast.isShowing())
+        {
             final Message message = obtainMessage(Messages.DISPLAY_SUPERTOAST);
             message.obj = superToast;
             sendMessage(message);
@@ -119,16 +129,19 @@ class Toaster extends Handler {
     /**
      * Send a message at a later time. This is used to dismiss a SuperToast.
      */
-    private void sendDelayedMessage(SuperToast superToast, int messageId, long delay) {
+    private void sendDelayedMessage(SuperToast superToast, int messageId, long delay)
+    {
         Message message = obtainMessage(messageId);
         message.obj = superToast;
         sendMessageDelayed(message, delay);
     }
 
     @Override
-    public void handleMessage(Message message) {
+    public void handleMessage(Message message)
+    {
         final SuperToast superToast = (SuperToast) message.obj;
-        switch (message.what) {
+        switch (message.what)
+        {
             case Messages.SHOW_NEXT:
                 showNextSuperToast();
                 break;
@@ -147,43 +160,61 @@ class Toaster extends Handler {
     /**
      * Try to show the SuperToast. SuperToasts will be shown using the WindowManager while
      * SuperActivityToasts will be shown using their supplied ViewGroup.
+     *
      * @param superToast the SuperToast (or SuperActivityToast) to be shown
      */
-    private void displaySuperToast(SuperToast superToast) {
+    private void displaySuperToast(SuperToast superToast)
+    {
 
         // Make sure the SuperToast isn't already showing for some reason
         if (superToast.isShowing()) return;
 
         // If the SuperToast is a SuperActivityToast, show it via the supplied ViewGroup
-        if (superToast instanceof SuperActivityToast) {
-            if (((SuperActivityToast) superToast).getViewGroup() == null) {
+        if (superToast instanceof SuperActivityToast)
+        {
+            if (((SuperActivityToast) superToast).getViewGroup() == null)
+            {
                 Log.e(getClass().getName(), ERROR_SAT_VIEWGROUP_NULL);
                 return;
             }
 
-            try {
+            try
+            {
                 ((SuperActivityToast) superToast).getViewGroup().addView(superToast.getView());
 
                 // Do not use the show animation on the first SuperToast if from orientation change
-                if (!((SuperActivityToast) superToast).isFromOrientationChange()) {
+                if (!((SuperActivityToast) superToast).isFromOrientationChange())
+                {
                     AnimationUtils.getShowAnimation((SuperActivityToast) superToast).start();
                 }
-            } catch (IllegalStateException illegalStateException) {
+            }
+            catch (IllegalStateException illegalStateException)
+            {
                 Log.e(getClass().getName(), illegalStateException.toString());
             }
 
-            if (!((SuperActivityToast) superToast).isIndeterminate()) {
+            if (!((SuperActivityToast) superToast).isIndeterminate())
+            {
                 // This will remove the SuperToast after the total duration
                 sendDelayedMessage(superToast, Messages.REMOVE_SUPERTOAST,
                         superToast.getDuration() + AnimationUtils.SHOW_DURATION);
             }
 
-        // The SuperToast is NOT a SuperActivityToast, show it via the WindowManager
-        } else {
-            final WindowManager windowManager = (WindowManager) superToast.getContext()
-                    .getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
-            if (windowManager != null) {
-                windowManager.addView(superToast.getView(), superToast.getWindowManagerParams());
+            // The SuperToast is NOT a SuperActivityToast, show it via the WindowManager
+        }
+        else
+        {
+            final WindowManager windowManager = (WindowManager) superToast.getContext().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+            if (windowManager != null)
+            {
+                try
+                {
+                    windowManager.addView(superToast.getView(), superToast.getWindowManagerParams());
+                }
+                catch (WindowManager.BadTokenException e)
+                {
+                    Log.e(getClass().getName(), e.toString());
+                }
             }
 
             // This will remove the SuperToast after a certain duration
@@ -195,29 +226,37 @@ class Toaster extends Handler {
     /**
      * Removes a showing SuperToast. This method will poll the Queue as well as try
      * to show the next SuperToast if one exists in the Queue.
+     *
      * @param superToast the SuperToast (or SuperActivityToast) to be removed
      */
-    void removeSuperToast(final SuperToast superToast) {
+    void removeSuperToast(final SuperToast superToast)
+    {
         // If the SuperToast is a SuperActivityToast, remove it from the supplied ViewGroup
-        if (superToast instanceof SuperActivityToast) {
+        if (superToast instanceof SuperActivityToast)
+        {
             // If SuperActivityToast has already been dismissed, do not attempt to dismiss it again
-            if (!superToast.isShowing()) {
+            if (!superToast.isShowing())
+            {
                 this.superToastPriorityQueue.remove(superToast);
                 return;
             }
 
             final Animator animator = AnimationUtils.getHideAnimation(
                     (SuperActivityToast) superToast);
-            animator.addListener(new Animator.AnimatorListener() {
+            animator.addListener(new Animator.AnimatorListener()
+            {
 
                 @Override
-                public void onAnimationStart(Animator animation) {
+                public void onAnimationStart(Animator animation)
+                {
                     // Do nothing
                 }
 
                 @Override
-                public void onAnimationEnd(Animator animation) {
-                    if (superToast.getOnDismissListener() != null) {
+                public void onAnimationEnd(Animator animation)
+                {
+                    if (superToast.getOnDismissListener() != null)
+                    {
                         superToast.getOnDismissListener().onDismiss(superToast.getView(),
                                 superToast.getStyle().dismissToken);
                     }
@@ -229,32 +268,40 @@ class Toaster extends Handler {
                 }
 
                 @Override
-                public void onAnimationCancel(Animator animation) {
+                public void onAnimationCancel(Animator animation)
+                {
                     // Do nothing
                 }
 
                 @Override
-                public void onAnimationRepeat(Animator animation) {
+                public void onAnimationRepeat(Animator animation)
+                {
                     // Do nothing
                 }
             });
             animator.start();
 
-        // If the SuperToast is NOT a SuperActivityToast, remove it from the WindowManager
-        } else {
+            // If the SuperToast is NOT a SuperActivityToast, remove it from the WindowManager
+        }
+        else
+        {
             final WindowManager windowManager = (WindowManager) superToast.getContext()
                     .getSystemService(Context.WINDOW_SERVICE);
 
             // If the WindowManager is null, the SuperToast will linger indefinitely
             if (windowManager == null) throw new IllegalStateException(ERROR_ST_WINDOWMANAGER_NULL);
 
-            try {
+            try
+            {
                 windowManager.removeView(superToast.getView());
-            } catch (IllegalArgumentException illegalArgumentException) {
+            }
+            catch (IllegalArgumentException illegalArgumentException)
+            {
                 Log.e(getClass().getName(), illegalArgumentException.toString());
             }
 
-            if (superToast.getOnDismissListener() != null) {
+            if (superToast.getOnDismissListener() != null)
+            {
                 superToast.getOnDismissListener().onDismiss(superToast.getView(),
                         superToast.getStyle().dismissToken);
             }
@@ -269,29 +316,42 @@ class Toaster extends Handler {
     /**
      * Cancels and removes all pending and/or showing SuperToasts and SuperActivityToasts.
      */
-    void cancelAllSuperToasts() {
+    void cancelAllSuperToasts()
+    {
         removeMessages(Messages.SHOW_NEXT);
         removeMessages(Messages.DISPLAY_SUPERTOAST);
         removeMessages(Messages.REMOVE_SUPERTOAST);
 
         // Iterate through the Queue, polling and removing everything
-        for (SuperToast superToast : superToastPriorityQueue) {
-            if (superToast instanceof SuperActivityToast) {
-                if (superToast.isShowing()) {
-                    try{
+        for (SuperToast superToast : superToastPriorityQueue)
+        {
+            if (superToast instanceof SuperActivityToast)
+            {
+                if (superToast.isShowing())
+                {
+                    try
+                    {
                         ((SuperActivityToast) superToast).getViewGroup().removeView(superToast.getView());
                         ((SuperActivityToast) superToast).getViewGroup().invalidate();
-                    } catch (NullPointerException|IllegalStateException exception) {
+                    }
+                    catch (NullPointerException | IllegalStateException exception)
+                    {
                         Log.e(getClass().getName(), exception.toString());
                     }
                 }
-            } else {
+            }
+            else
+            {
                 final WindowManager windowManager = (WindowManager) superToast.getContext()
                         .getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
-                if (superToast.isShowing()) {
-                    try{
+                if (superToast.isShowing())
+                {
+                    try
+                    {
                         windowManager.removeView(superToast.getView());
-                    } catch (NullPointerException|IllegalArgumentException exception) {
+                    }
+                    catch (NullPointerException | IllegalArgumentException exception)
+                    {
                         Log.e(getClass().getName(), exception.toString());
                     }
                 }
@@ -302,9 +362,11 @@ class Toaster extends Handler {
 
     /**
      * Returns the {@link PriorityQueue} associated with this Toaster.
+     *
      * @return the current PriorityQueue
      */
-    public PriorityQueue<SuperToast> getQueue() {
+    public PriorityQueue<SuperToast> getQueue()
+    {
         return this.superToastPriorityQueue;
     }
 
