@@ -102,6 +102,9 @@ class Toaster extends Handler
      */
     void add(SuperToast superToast)
     {
+        SuperToast currentToast = superToastPriorityQueue.peek();
+        if(currentToast.getText().equals(superToast.getText()) && currentToast.getDuration() == superToast.getDuration())
+            return;
         // Add SuperToast to queue and try to show it
         superToastPriorityQueue.add(superToast);
         this.showNextSuperToast();
