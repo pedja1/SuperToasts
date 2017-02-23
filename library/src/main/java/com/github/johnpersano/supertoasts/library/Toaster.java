@@ -210,7 +210,14 @@ class Toaster extends Handler
             final WindowManager windowManager = (WindowManager) superToast.getContext().getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
             if (windowManager != null)
             {
-                windowManager.addView(superToast.getView(), superToast.getWindowManagerParams());
+                try
+                {
+                    windowManager.addView(superToast.getView(), superToast.getWindowManagerParams());
+                }
+                catch (WindowManager.BadTokenException e)
+                {
+                    Log.e(getClass().getName(), e.toString());
+                }
             }
 
             // This will remove the SuperToast after a certain duration
